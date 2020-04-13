@@ -32,6 +32,7 @@
 #endif
 #include <sys/stat.h>
 #endif
+
 #include <algorithm>
 #include <cerrno>
 #include <cstdlib>
@@ -184,6 +185,51 @@ absl::StatusOr<int> SpawnProcessAndWait(const std::vector<std::string>& argv) {
 
 absl::Status SpawnProcess(const std::vector<std::string>& argv) {
   return DoSpawnProcess(argv, /*wait=*/false).status();
+}
+
+absl::StatusOr<std::string> GetModuleFilename() {
+#ifdef _WIN32
+  // TODO(cblichmann): Test/compile this
+  std::wstring path(MAX_PATH, L'\0');
+  while (true) {
+    const DWORD len =
+        GetModuleFileNameW(nullptr, &path[0], static_cast<DWORD>(path.size()));
+    if (len == 0 && GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+      return absl::UnknownError(
+          absl::StrCat("Failed to get module path: ", GetLastOsError()));
+    }
+    if (len < path.size()) {
+      path.resize(len);
+      break;
+    }
+    path.resize(3 * path.size() / 2);
+  }
+  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(path);
+#elif __APPLE__
+  // TODO(cblichmann): Test/compile this
+  std::string path(NAME_MAX, '\0');  // Start small
+  while (true) {
+    if (_NSGetExecutablePath(&path[0], path.size() == 0) {
+      path.resize(strlen(&path[0]));
+      break;
+    }
+    path.resize(3 * path.size() / 2);
+  }
+#else
+  std::string path(NAME_MAX, '\0');  // Start small
+  while (true) {
+    ssize_t len = readlink("/proc/self/exe", &path[0], path.size());
+    if (len < 0) {
+      return absl::ErrnoToStatus(errno, "Failed to get module path");
+    }
+    if (len < path.size()) {
+      path.resize(len);
+      break;
+    }
+    path.resize(3 * path.size() / 2);
+  }
+#endif
+  return path;
 }
 
 absl::StatusOr<std::string> GetOrCreateAppDataDirectory(

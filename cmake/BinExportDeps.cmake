@@ -58,6 +58,11 @@ set(Protobuf_INCLUDE_DIR "${protobuf_SOURCE_DIR}/src" CACHE INTERNAL "")
 set(Protobuf_LIBRARIES protobuf::libprotobuf CACHE INTERNAL "")
 find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
+# Disassembly
+if(BINEXPORT_ENABLE_DISASM)
+  find_package(Zydis REQUIRED)
+endif()
+
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")

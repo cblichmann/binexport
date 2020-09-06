@@ -15,6 +15,8 @@
 option(BINEXPORT_BUILD_TESTING
        "If ON, this will build all of BinExport's own tests" ON)
 
+option(BINEXPORT_ENABLE_DISASM "Enable disassembly into BinExport" OFF)
+
 option(BINEXPORT_ENABLE_IDAPRO "Build the IDA Pro plugins" ON)
 option(BINEXPORT_ENABLE_BINARYNINJA "Build the Binary Ninja plugin" ON)
 

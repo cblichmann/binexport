@@ -51,6 +51,31 @@ target_link_libraries(bxp-dummy PRIVATE
   binexport_base
   bxp::command_util
 )
+install(TARGETS binexport-dummy RUNTIME DESTINATION binexport-prefix)
+
+if(BINEXPORT_ENABLE_DISASM)
+  # Sub-command that disassembles a binary into BinExport format
+  add_executable(bxp-disasm bxp_disasm.cc)
+  target_include_directories(bxp-disasm PRIVATE
+    ${zydis_INCLUDE_DIR}
+  )
+  target_link_directories(bxp-disasm PRIVATE
+    ${zydis_LIB_DIR}
+  )
+  target_link_libraries(bxp-disasm PRIVATE
+    absl::flags_parse
+    absl::status
+    absl::str_format
+    binexport_base
+    binexport_core
+    binexport_shared
+    bxp::command_util
+    OpenSSL::SSL
+    Zycore
+    Zydis
+  )
+  install(TARGETS bxp-disasm RUNTIME DESTINATION binexport-prefix)
+endif()
 
 add_executable(binexport2dump binexport2dump.cc)
 target_link_libraries(binexport2dump

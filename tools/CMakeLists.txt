@@ -52,6 +52,16 @@ target_link_libraries(bxp-dummy PRIVATE
   bxp::command_util
 )
 
+add_executable(bxp-flow-graph bxp_flow_graph.cc)
+target_link_libraries(bxp-flow-graph PRIVATE
+  absl::flags_parse
+  absl::status
+  absl::str_format
+  binexport_base
+  binexport_shared
+  bxp::command_util
+)
+
 add_executable(binexport2dump binexport2dump.cc)
 target_link_libraries(binexport2dump
   absl::flat_hash_map

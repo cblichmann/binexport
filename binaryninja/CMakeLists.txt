@@ -13,6 +13,8 @@
 # limitations under the License.
 
 add_library(${binexport_bn_plugin_name} SHARED
+  flow_analysis.cc
+  flow_analysis.h
   main_plugin.cc
   main_plugin.h
   log_sink.cc

@@ -85,38 +85,197 @@ std::string GetMnemonic(
   return "";
 }
 
+std::string ToString(BNInstructionTextTokenType type) {
+  switch (type) {
+    case TextToken:
+      return "TextToken";
+    case InstructionToken:
+      return "InstructionToken";
+    case OperandSeparatorToken:
+      return "OperandSeparatorToken";
+    case RegisterToken:
+      return "RegisterToken";
+    case IntegerToken:
+      return "IntegerToken";
+    case PossibleAddressToken:
+      return "PossibleAddressToken";
+    case BeginMemoryOperandToken:
+      return "BeginMemoryOperandToken";
+    case EndMemoryOperandToken:
+      return "EndMemoryOperandToken";
+    case FloatingPointToken:
+      return "FloatingPointToken";
+    case AnnotationToken:
+      return "AnnotationToken";
+    case CodeRelativeAddressToken:
+      return "CodeRelativeAddressToken";
+    case ArgumentNameToken:
+      return "ArgumentNameToken";
+    case HexDumpByteValueToken:
+      return "HexDumpByteValueToken";
+    case HexDumpSkippedByteToken:
+      return "HexDumpSkippedByteToken";
+    case HexDumpInvalidByteToken:
+      return "HexDumpInvalidByteToken";
+    case HexDumpTextToken:
+      return "HexDumpTextToken";
+    case OpcodeToken:
+      return "OpcodeToken";
+    case StringToken:
+      return "StringToken";
+    case CharacterConstantToken:
+      return "CharacterConstantToken";
+    case KeywordToken:
+      return "KeywordToken";
+    case TypeNameToken:
+      return "TypeNameToken";
+    case FieldNameToken:
+      return "FieldNameToken";
+    case NameSpaceToken:
+      return "NameSpaceToken";
+    case NameSpaceSeparatorToken:
+      return "NameSpaceSeparatorToken";
+    case TagToken:
+      return "TagToken";
+    case StructOffsetToken:
+      return "StructOffsetToken";
+    case StructOffsetByteValueToken:
+      return "StructOffsetByteValueToken";
+    case StructureHexDumpTextToken:
+      return "StructureHexDumpTextToken";
+    case GotoLabelToken:
+      return "GotoLabelToken";
+    case CommentToken:
+      return "CommentToken";
+    case PossibleValueToken:
+      return "PossibleValueToken";
+    case PossibleValueTypeToken:
+      return "PossibleValueTypeToken";
+    case ArrayIndexToken:
+      return "ArrayIndexToken";
+    case IndentationToken:
+      return "IndentationToken";
+    case CodeSymbolToken:
+      return "CodeSymbolToken";
+    case DataSymbolToken:
+      return "DataSymbolToken";
+    case LocalVariableToken:
+      return "LocalVariableToken";
+    case ImportToken:
+      return "ImportToken";
+    case AddressDisplayToken:
+      return "AddressDisplayToken";
+    case IndirectImportToken:
+      return "IndirectImportToken";
+    case ExternalSymbolToken:
+      return "ExternalSymbolToken";
+    default:
+      return absl::StrCat("<invalid-", type, ">");
+  }
+}
+
 Instruction ParseInstructionBinaryNinja(
     Address address, const BinaryNinja::InstructionInfo& instruction,
     const std::vector<BinaryNinja::InstructionTextToken>& instruction_tokens,
     CallGraph* call_graph, FlowGraph* flow_graph) {
   // TODO(cblichmann): Return if no code at address
 
-  std::string mnemonic = GetMnemonic(instruction_tokens);
-  if (mnemonic.empty()) {
-    return Instruction(address);
-  }
-
-  // TODO(cblichmann): Is this always the case in Binja?
-  const Address next_instruction = address + instruction.length;
-
-  // TODO(cblichmann): Create expression trees for operands
-  std::string operand;
-  for (int i = 1; i < instruction_tokens.size(); ++i) {
-    const auto& token = instruction_tokens[i];
-    absl::StrAppend(&operand, token.text);
-  }
-  absl::StripAsciiWhitespace(&mnemonic);
-  absl::StripAsciiWhitespace(&operand);
-
+  std::string mnemonic;
+  enum {
+    kStart,
+    kMnemonic,
+    kBeginOperand,
+    kEndOperand,
+    kError,
+    kSuccess,
+  } state = kStart;
   Operands operands;
   Expressions expressions;
-  if (!operand.empty()) {
-    expressions.push_back(
-        Expression::Create(0, operand, 0, Expression::TYPE_SYMBOL, 0));
-    operands.push_back(Operand::CreateOperand(expressions));
+  auto token = instruction_tokens.begin();
+  const auto end = instruction_tokens.end();
+  while (true) {
+    switch (state) {
+      case kStart:
+        if (token->type != BNInstructionTextTokenType::InstructionToken) {
+          LOG(ERROR) << "expected InstructionToken, found: "
+                     << ToString(token->type);
+          state = kError;
+        } else {
+          mnemonic = absl::StripAsciiWhitespace(token->text);
+          state = kMnemonic;
+          ++token;
+        }
+        break;
+      case kMnemonic:
+        while (token != end) {
+          if (token->type != BNInstructionTextTokenType::TextToken) {
+            state = kBeginOperand;
+            break;
+          }
+          if (!absl::StripAsciiWhitespace(token->text).empty()) {
+            LOG(ERROR) << "expected empty TextToken, got: \"" << token->text
+                       << "\"";
+            state = kError;
+            break;
+          }
+          ++token;
+        }
+        break;
+      case kBeginOperand:
+        expressions.clear();
+        while (token != end) {
+          if (token->type ==
+              BNInstructionTextTokenType::OperandSeparatorToken) {
+            break;
+          }
+          expressions.push_back(Expression::Create(
+              nullptr, std::string(absl::StripAsciiWhitespace(token->text)), 0,
+              Expression::TYPE_SYMBOL));
+          ++token;
+        }
+        if (!expressions.empty()) {
+          state = kEndOperand;
+        }
+        break;
+      case kEndOperand:
+        operands.push_back(Operand::CreateOperand(expressions));
+        ++token;
+        state = token != end ? kBeginOperand : kSuccess;
+        break;
+      case kError:
+        return Instruction(address);
+      case kSuccess:
+        // TODO(cblichmann): Set next_instruction = 0 on no flow.
+        const Address next_instruction = address + instruction.length;
+        return Instruction(address, next_instruction, instruction.length,
+                           mnemonic, operands);
+    }
   }
-  return Instruction(address, next_instruction, instruction.length, mnemonic,
-                     operands);
+
+  // // TODO(cblichmann): Is this always the case in Binja? I.e. check for flow.
+  // const Address next_instruction = address + instruction.length;
+  //
+  // // TODO(cblichmann): Create expression trees for operands
+  // std::string operand;
+  // std::string operand2;
+  // const size_t num_tokens = instruction_tokens.size();
+  // for (int i = 1; i < num_tokens; ++i) {
+  //   const auto& token = instruction_tokens[i];
+  //   absl::StrAppend(&operand, token.text);
+  //   absl::StrAppend(&operand2, "|", token.text, "=", token.type);
+  // }
+  // absl::StripAsciiWhitespace(&mnemonic);
+  // absl::StripAsciiWhitespace(&operand);
+  // LOG(INFO) << FormatAddress(address) << ": " << mnemonic << " " << operand2
+  //           << "|";
+  //
+  // if (!operand.empty()) {
+  //   expressions.push_back(
+  //       Expression::Create(0, operand, 0, Expression::TYPE_SYMBOL, 0));
+  //   operands.push_back(Operand::CreateOperand(expressions));
+  // }
+  // return Instruction(address, next_instruction, instruction.length, mnemonic,
+  //                    operands);
 }
 
 void AnalyzeFlow(

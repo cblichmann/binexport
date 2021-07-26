@@ -18,6 +18,8 @@ add_ida_library(binexport_plugin_shared STATIC
   digest.h
   flow_analysis.cc
   flow_analysis.h
+  ida_api.cc
+  ida_api.h
   log_sink.cc
   log_sink.h
   names.cc

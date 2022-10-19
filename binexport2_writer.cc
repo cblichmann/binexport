@@ -238,19 +238,19 @@ void WriteInstructions(
     const std::vector<std::pair<std::string, int32_t>>& mnemonics,
     const AddressReferences& address_references,
     std::vector<std::pair<Address, int32_t>>* instruction_indices,
-    BinExport2* proto) {
+    bool export_instruction_raw_bytes, BinExport2* proto) {
   QCHECK(std::is_sorted(address_references.begin(), address_references.end()));
   proto->mutable_instruction()->Reserve(instructions.size());
-  const Instruction* previous_instruction(nullptr);
+  const Instruction* previous_instruction = nullptr;
   for (const Instruction& instruction : instructions) {
     if (instruction.HasFlag(FLAG_INVALID)) {
       previous_instruction = nullptr;
       continue;
     }
-    instruction_indices->push_back(
-        std::make_pair(instruction.GetAddress(), proto->instruction_size()));
-    BinExport2::Instruction* proto_instruction(proto->add_instruction());
-    QCHECK_EQ(instruction.GetSize(), instruction.GetBytes().size());
+    instruction_indices->emplace_back(instruction.GetAddress(),
+                                      proto->instruction_size());
+    BinExport2::Instruction* proto_instruction = proto->add_instruction();
+    DCHECK_EQ(instruction.GetSize(), instruction.GetBytes().size());
     // Write the full instruction address iff:
     // - there is no previous instruction
     // - the previous instruction doesn't have code flow into the current one
@@ -262,7 +262,11 @@ void WriteInstructions(
         flow_graph.GetFunction(instruction.GetAddress())) {
       proto_instruction->set_address(instruction.GetAddress());
     }
-    proto_instruction->set_raw_bytes(instruction.GetBytes());
+    if (export_instruction_raw_bytes) {
+      proto_instruction->set_raw_bytes(instruction.GetBytes());
+    } else {
+      proto_instruction->set_size(instruction.GetSize());
+    }
     if (const auto index =
             GetMnemonicIndex(mnemonics, instruction.GetMnemonic())) {
       // Only store if different from default value.
@@ -782,14 +786,10 @@ absl::Status WriteProtoToFile(const std::string& filename, BinExport2* proto) {
 }
 }  // namespace
 
-BinExport2Writer::BinExport2Writer(const std::string& result_filename,
-                                   const std::string& executable_filename,
-                                   const std::string& executable_hash,
-                                   const std::string& architecture)
-    : filename_(result_filename),
-      executable_filename_(executable_filename),
-      executable_hash_(executable_hash),
-      architecture_(architecture) {}
+BinExport2Writer::BinExport2Writer(std::string filename,
+                                   BinExport2Writer::Options options)
+    : filename_(std::move(filename)),
+      options_(std::move(options)) {}
 
 absl::Status BinExport2Writer::WriteToProto(
     const CallGraph& call_graph, const FlowGraph& flow_graph,
@@ -797,9 +797,9 @@ absl::Status BinExport2Writer::WriteToProto(
     const AddressReferences& address_references,
     const AddressSpace& address_space, BinExport2* proto) const {
   auto* meta_information = proto->mutable_meta_information();
-  meta_information->set_executable_name(executable_filename_);
-  meta_information->set_executable_id(executable_hash_);
-  meta_information->set_architecture_name(architecture_);
+  meta_information->set_executable_name(options_.executable_filename);
+  meta_information->set_executable_id(options_.executable_hash);
+  meta_information->set_architecture_name(options_.architecture);
   meta_information->set_timestamp(absl::ToUnixSeconds(absl::Now()));
 
   WriteExpressions(proto);
@@ -809,7 +809,8 @@ absl::Status BinExport2Writer::WriteToProto(
     WriteMnemonics(instructions, &mnemonics, proto);
     std::vector<std::pair<Address, int32_t>> instruction_indices;
     WriteInstructions(flow_graph, instructions, mnemonics, address_references,
-                      &instruction_indices, proto);
+                      &instruction_indices,
+                      options_.export_instruction_raw_bytes, proto);
     WriteBasicBlocks(instructions, instruction_indices, proto);
     WriteComments(call_graph, instruction_indices, proto);
     WriteStrings(address_references, address_space, instruction_indices, proto);

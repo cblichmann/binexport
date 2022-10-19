@@ -191,8 +191,8 @@ message BinExport2 {
   message Instruction {
     // This will only be filled for instructions that do not just flow from the
     // immediately preceding instruction. Regular instructions will have to
-    // calculate their own address by adding raw_bytes.size() to the previous
-    // instruction's address.
+    // calculate their own address by adding either size or raw_bytes.size()
+    // (if present) to the previous instruction's address.
     optional uint64 address = 1;
 
     // If this is a call instruction and call targets could be determined
@@ -211,7 +211,12 @@ message BinExport2 {
     // Implicit: operand sequence
     repeated int32 operand_index = 4;
 
-    // The unmodified input bytes corresponding to this instruction.
+    // The size of this instruction in bytes. If not present, raw_bytes.size()
+    // must be used to calculate instruction addresses.
+    optional uint32 size = 7;
+
+    // The unmodified input bytes corresponding to this instruction. If empty or
+    // not present, size must be used to calculate instruction addresses.
     optional bytes raw_bytes = 5;
 
     // Implicit: comment sequence

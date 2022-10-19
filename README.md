@@ -168,13 +168,14 @@ idaapi.ida_expr.eval_idc_expr(None, ida_idaapi.BADADDR,
 BinExport defines the following plugin options, that can be specified on IDA's
 command line:
 
-| Option                                 | Description                                                           |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| `-OBinExportAutoAction:<ACTION>`       | Invoke a BinExport IDC function and exit                              |
-| `-OBinExportModule:<PARAM>`            | Argument for `BinExportAutoAction`                                    |
-| `-OBinExportLogFile:<FILE>`            | Log messages to a file                                                |
-| `-OBinExportAlsoLogToStdErr:TRUE`      | If specified, also log to standard error                              |
-| `-OBinExportX86NoReturnHeuristic:TRUE` | Enable the X86-specific heuristic to identify non-returning functions |
+| Option | Description |
+| - | - |
+| `-OBinExportAutoAction:<ACTION>` | Invoke a BinExport IDC function and exit |
+| `-OBinExportModule:<PARAM>` | Argument for `BinExportAutoAction` |
+| `-OBinExportLogFile:<FILE>` | Log messages to a file |
+| `-OBinExportAlsoLogToStdErr:TRUE` | If specified, also log to standard error |
+| `-OBinExportX86NoReturnHeuristic:TRUE` | Enable an X86-specific heuristic to identify non-returning functions |
+| `-OBinExportExportInstructionRawBytes:TRUE` | Store the original bytes making up the exported instructions |
 
 Note: These options must come before any files.
 

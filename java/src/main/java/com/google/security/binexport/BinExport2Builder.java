@@ -70,6 +70,7 @@ public class BinExport2Builder {
   private MnemonicMapper mnemonicMapper = new IdentityMnemonicMapper();
   private long addressOffset = 0;
   private boolean prependNamespace = false;
+  private boolean exportInstructionRawBytes = false;
 
   public BinExport2Builder(Program ghidraProgram) {
     program = ghidraProgram;
@@ -89,6 +90,11 @@ public class BinExport2Builder {
 
   public BinExport2Builder setPrependNamespace(boolean isPrepended) {
     prependNamespace = isPrepended;
+    return this;
+  }
+
+  public BinExport2Builder setExportInstructionRawBytes(boolean export) {
+    exportInstructionRawBytes = export;
     return this;
   }
 
@@ -190,7 +196,9 @@ public class BinExport2Builder {
       }
       try {
         var bytes = instr.getBytes();
-        instrBuilder.setRawBytes(ByteString.copyFrom(bytes));
+        if (exportInstructionRawBytes) {
+          instrBuilder.setRawBytes(ByteString.copyFrom(bytes));
+        }
         prevSize = bytes.length;
       } catch (MemoryAccessException e) {
         // Leave raw bytes empty

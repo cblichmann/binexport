@@ -451,8 +451,12 @@ absl::Status ExportBinary(const std::string& filename,
                           BinaryNinja::BinaryView* view) {
   NA_ASSIGN_OR_RETURN(std::string sha256_hash, GetInputFileSha256(view));
 
-  BinExport2Writer writer(filename, view->GetFile()->GetOriginalFilename(),
-                          sha256_hash, GetArchitectureName(view));
+  BinExport2Writer writer(
+      filename,
+      BinExport2Writer::Options()
+          .set_executable_filename(view->GetFile()->GetOriginalFilename())
+          .set_executable_hash(sha256_hash)
+          .set_architecture(GetArchitectureName(view)));
   NA_RETURN_IF_ERROR(ExportBinaryView(view, &writer));
   return absl::OkStatus();
 }

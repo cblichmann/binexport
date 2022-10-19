@@ -36,6 +36,10 @@ class Plugin : public IdaPlugin<Plugin> {
 
   bool x86_noreturn_heuristic() const { return x86_noreturn_heuristic_; }
 
+  bool export_instruction_raw_bytes() const {
+    return export_instruction_raw_bytes_;
+  }
+
  private:
   bool alsologtostderr_ = false;
   std::string log_filename_;
@@ -43,6 +47,10 @@ class Plugin : public IdaPlugin<Plugin> {
   // Whether to use an X86-specific heuristic to identify functions that do not
   // return. See FlowGraph::FindBasicBlockBreaks() for details.
   bool x86_noreturn_heuristic_ = false;
+
+  // Whether to export the raw bytes making up instructions.
+  // See binexport2_writer.cc.
+  bool export_instruction_raw_bytes_ = false;
 };
 
 }  // namespace security::binexport

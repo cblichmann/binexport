@@ -41,7 +41,7 @@ public class BinExportExporter extends Exporter {
   private static final String BINEXPORT_VERSION = "12";
 
   private static final String BINEXPORT_COPYRIGHT =
-      "BinExport " + BINEXPORT_VERSION + " (c)2019-2021 Google LLC";
+      "BinExport " + BINEXPORT_VERSION + " (c)2019-2022 Google LLC";
 
   /** Display name that appears in the export dialog. */
   private static final String BINEXPORT_FORMAT_DISPLAY_NAME =
@@ -58,6 +58,10 @@ public class BinExportExporter extends Exporter {
   private static final String IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE =
       "Prepend Namespace to Function Names";
 
+  private static final String GENERAL_OPTGROUP = "General";
+  private static final String GENERAL_OPT_EXPORT_INSTRUCTION_RAW_BYTES =
+      "Store the orignal raw bytes of instructions";
+
   /** Whether to subtract the program image base from addresses for export. */
   private boolean subtractImagebase = false;
 
@@ -66,6 +70,9 @@ public class BinExportExporter extends Exporter {
 
   /** Whether to prepend "namespace::" to function names where the namespace is not "Global" */
   private boolean prependNamespace = false;
+
+  /** Whether to store the original bytes making up the exported instructions */
+  private boolean exportInstructionRawBytes = false;
 
   public BinExportExporter() {
     super(BINEXPORT_FORMAT_DISPLAY_NAME, BINEXPORT_FILE_EXTENSION, null);
@@ -116,6 +123,8 @@ public class BinExportExporter extends Exporter {
         new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_REMAP_MNEMONICS,
             Boolean.FALSE),
         new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE,
+            Boolean.FALSE),
+        new Option(GENERAL_OPTGROUP, GENERAL_OPT_EXPORT_INSTRUCTION_RAW_BYTES,
             Boolean.FALSE));
   }
 
@@ -131,6 +140,9 @@ public class BinExportExporter extends Exporter {
           break;
         case IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE:
           prependNamespace = (boolean) option.getValue();
+          break;
+        case GENERAL_OPT_EXPORT_INSTRUCTION_RAW_BYTES:
+          exportInstructionRawBytes = (boolean) option.getValue();
           break;
       }
     }

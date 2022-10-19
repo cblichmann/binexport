@@ -127,8 +127,13 @@ absl::Status ExportIdb(Writer* writer) {
 int ExportBinary(const std::string& filename) {
     const std::string hash =
         GetInputFileSha256().value_or(GetInputFileMd5().value_or(""));
-    BinExport2Writer writer(filename, GetModuleName(), hash,
-                            GetArchitectureName().value());
+    BinExport2Writer writer(
+        filename, BinExport2Writer::Options()
+                      .set_executable_filename(GetModuleName())
+                      .set_executable_hash(hash)
+                      .set_architecture(GetArchitectureName().value())
+                      .set_export_instruction_raw_bytes(
+                          Plugin::instance()->export_instruction_raw_bytes()));
     if (absl::Status status = ExportIdb(&writer); !status.ok()) {
       LOG(INFO) << "Error exporting: " << std::string(status.message());
       warning("Error exporting: %s\n", std::string(status.message()).c_str());
@@ -327,11 +332,13 @@ Plugin::LoadStatus Plugin::Init() {
     return PLUGIN_SKIP;
   }
 
-  if (const auto heuristic =
-          absl::AsciiStrToUpper(GetArgument("X86NoReturnHeuristic"));
-      !heuristic.empty()) {
-    // If unset, this leaves the default value
-    x86_noreturn_heuristic_ = heuristic == "TRUE";
+  if (const std::string setting = GetArgument("X86NoReturnHeuristic");
+      !setting.empty()) {  // If unset, this leaves the default value
+    x86_noreturn_heuristic_ = absl::EqualsIgnoreCase(setting, "true");
+  }
+  if (const std::string setting = GetArgument("ExportInstructionRawBytes");
+      !setting.empty()) {
+    export_instruction_raw_bytes_ = absl::EqualsIgnoreCase(setting, "true");
   }
 
   LOG(INFO) << kBinExportName << " " << kBinExportDetailedVersion << ", "

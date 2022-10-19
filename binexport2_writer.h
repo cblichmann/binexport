@@ -15,6 +15,9 @@
 #ifndef BINEXPORT2_WRITER_H_
 #define BINEXPORT2_WRITER_H_
 
+#include <string>
+#include <utility>
+
 #include "third_party/zynamics/binexport/writer.h"
 
 class BinExport2;
@@ -23,12 +26,50 @@ namespace security::binexport {
 
 class BinExport2Writer : public Writer {
  public:
+  struct Options {
+    Options& set_executable_filename(std::string value) {
+      executable_filename = std::move(value);
+      return *this;
+    }
+
+    Options& set_executable_hash(std::string value) {
+      executable_hash = std::move(value);
+      return *this;
+    }
+
+    Options& set_architecture(std::string value) {
+      architecture = std::move(value);
+      return *this;
+    }
+
+    Options& set_export_instruction_raw_bytes(bool value) {
+      export_instruction_raw_bytes = value;
+      return *this;
+    }
+
+    // The filename of the orignal binary.
+    std::string executable_filename;
+
+    // Hex-encoded hash of the original binary. Normally, this is a SHA256 hash
+    // (64 hex characters) but older versions of IDA Pro may use MD5 instead
+    // (32 hex characters). Future versions of BinExport may use different
+    // hash algorithms, in which case the format of this string should be
+    //   <HASH_ALGO>:<HEX_CHARACTERS>
+    std::string executable_hash;
+
+    // A short string describing this binary's instruction set architecure, with
+    // the number of address bits appended. Typical values are "x86-64",
+    // "ARM-64", and "Dalvik-32". See names.cc's GetArchitectureName().
+    std::string architecture;
+
+    // Whether to export the raw bytes making up instructions. Not saving the
+    // raw bytes will save significant space in the resulting output.
+    bool export_instruction_raw_bytes = false;
+  };
+
   // Note: This writer expects executable_hash to be hex encoded, not the raw
   //       bytes of the digest.
-  BinExport2Writer(const std::string& result_filename,
-                   const std::string& executable_filename,
-                   const std::string& executable_hash,
-                   const std::string& architecture);
+  BinExport2Writer(std::string filename, Options options);
 
   absl::Status Write(const CallGraph& call_graph, const FlowGraph& flow_graph,
                      const Instructions& instructions,
@@ -44,9 +85,7 @@ class BinExport2Writer : public Writer {
 
  private:
   std::string filename_;
-  std::string executable_filename_;
-  std::string executable_hash_;
-  std::string architecture_;
+  Options options_;
 };
 
 }  // namespace security::binexport

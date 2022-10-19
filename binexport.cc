@@ -31,7 +31,8 @@ Address GetInstructionAddress(const BinExport2& proto, int index) {
   int delta = 0;
   for (--index; index >= 0; --index) {
     instruction = &proto.instruction(index);
-    delta += instruction->raw_bytes().size();
+    delta += instruction->has_size() ? instruction->size()
+                                     : instruction->raw_bytes().size();
     if (instruction->has_address()) {
       return instruction->address() + delta;
     }
@@ -52,10 +53,13 @@ std::vector<Address> GetAllInstructionAddresses(const BinExport2& proto) {
   for (const auto& instruction : proto.instruction()) {
     if (instruction.has_address()) {
       address = instruction.address();
-      next_address = address + instruction.raw_bytes().size();
+      next_address =
+          address + (instruction.has_size() ? instruction.size()
+                                            : instruction.raw_bytes().size());
     } else {
       address = next_address;
-      next_address += instruction.raw_bytes().size();
+      next_address += instruction.has_size() ? instruction.size()
+                                             : instruction.raw_bytes().size();
     }
     result.push_back(address);
   }

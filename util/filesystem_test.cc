@@ -25,6 +25,7 @@
 namespace security::binexport {
 namespace {
 
+using ::not_absl::IsOk;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -118,6 +119,16 @@ TEST(FileSystemTest, LinkingFiles) {
   }
 
   EXPECT_THAT(CreateOrUpdateLinkWithFallback(target, link_path).ok(), IsTrue());
+}
+
+TEST(FileSystemTest, LinkingDirectories) {
+  NA_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
+                          GetOrCreateTempDirectory("test"));
+  const std::string target = JoinPath(temp_dir, "target");
+  const std::string link_path = JoinPath(temp_dir, "link");
+
+  ASSERT_THAT(CreateDirectories(target), IsOk());
+  EXPECT_THAT(CreateOrUpdateDirectoryLink(target, link_path), IsOk());
 }
 
 }  // namespace

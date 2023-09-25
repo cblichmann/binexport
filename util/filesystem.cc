@@ -437,3 +437,84 @@ absl::Status CreateOrUpdateLinkWithFallback(const std::string& target,
                                          "' failed: ", GetLastOsError()));
 #endif
 }
+
+#ifdef _WIN32
+// From ntifs.h (part of the Windows DDK)
+struct REPARSE_DATA_BUFFER {
+  ULONG ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG Flags;
+      WCHAR PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR DataBuffer[1];
+    } GenericReparseBuffer;
+  } DUMMYUNIONNAME;
+};
+#endif
+
+absl::Status CreateOrUpdateDirectoryLink(const std::string& target,
+                                         const std::string& link_path) {
+#ifndef _WIN32
+  // On Linux and macOS, simply create a symlink.
+  return CreateOrUpdateLinkWithFallback(target, link_path);
+#else
+  std::string canonical_target(MAX_PATH, '\0');
+  if (!PathCanonicalize(&canonical_target[0], target.c_str()) ||
+      !PathFileExists(canonical_target.c_str())) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("Cannot read '", target, "': ", GetLastOsError()));
+  }
+  canonical_target.resize(strlen(canonical_target.c_str()));  // Right-trim NULs
+
+  std::string canonical_path(MAX_PATH, '\0');
+  if (!PathCanonicalize(&canonical_path[0], link_path.c_str())) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("Path '", link_path, "' invalid: ", GetLastOsError()));
+  }
+  canonical_path.resize(strlen(canonical_path.c_str()));
+
+  // Remove existing file first
+  if (PathFileExists(canonical_path.c_str()) &&
+      !DeleteFile(canonical_path.c_str())) {
+    return absl::UnknownError(absl::StrCat(
+        "Cannot remove existing '", canonical_path, "': ", GetLastOsError()));
+  }
+  if (CreateSymbolicLink(canonical_path.c_str(), canonical_target.c_str(),
+                         SYMBOLIC_LINK_FLAG_DIRECTORY |
+                             SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+    return absl::OkStatus();
+  }
+
+  // Symlink creation failed. Either "Developer Mode" is not enabled, or the
+  // user does not have elevated privileges.
+  // Try to create a directory junction instead.
+  NA_RETURN_IF_ERROR(CreateDirectories(canonical_target));
+
+REPARSE_DATA_BUFFER
+
+
+  // - OpenDirectory()
+  // - Prepare a REPARSE_MOUNTPOINT_DATA_BUFFER
+  // - DeviceIoControl(dir_handle, FSCTL_SET_REPARSE_POINT, ...)
+
+
+  return absl::UnknownError(absl::StrCat("Symlink '", canonical_target,
+                                         "' to '", canonical_path,
+                                         "' failed: ", GetLastOsError()));
+#endif
+}

@@ -114,4 +114,10 @@ absl::Status CopyFile(absl::string_view from, absl::string_view to);
 absl::Status CreateOrUpdateLinkWithFallback(const std::string& target,
                                             const std::string& link_path);
 
+// Creates a link to a directory. On Linux and macOS, this is just creates a
+// symlink. On Windows, a symlink is tried first, but since that might need
+// privileges, a directory junction is tried next.
+absl::Status CreateOrUpdateDirectoryLink(const std::string& target,
+                                         const std::string& link_path);
+
 #endif  // UTIL_FILESYSTEM_H_

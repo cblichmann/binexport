@@ -16,6 +16,7 @@
 #define ADDRESS_REFERENCES_H_
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "third_party/zynamics/binexport/entry_point.h"
@@ -75,9 +76,9 @@ struct AddressReference {
   uint8_t kind_;
 };
 
-using AddressReferences = std::vector<AddressReference>;
-
 bool operator<(const AddressReference& one, const AddressReference& two);
 bool operator==(const AddressReference& one, const AddressReference& two);
+
+using AddressReferences = std::vector<AddressReference>;
 
 #endif  // ADDRESS_REFERENCES_H_

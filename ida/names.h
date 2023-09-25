@@ -97,9 +97,24 @@ bool IsCode(Address address);
 bool IsStructVariable(Address address, uint8_t operand_num);
 bool IsStackVariable(Address address, uint8_t operand_num);
 
-// Returns the first string references for the address. Note that there may be
+// Returns the first string reference for the address. Note that there may be
 // several string references.
 std::string GetStringReference(ea_t address);
+
+// Memory layout information for string references.
+struct StringReferenceInfo {
+  bool is_valid() const { return char_width != 0 && size > 0; }
+
+  // 1 byte for ASCII and UTF-8, 2 for UCS2 and UTF-16, 4 for UTF-32
+  uint8_t char_width = 0;
+
+  // Pascal strings have 1, 2 or 4 byte size prefixes. For zero-terminated
+  // strings, this will be zero.
+  uint8_t size_prefix_len = 0;
+
+  size_t size = 0;  // Total size in bytes
+};
+StringReferenceInfo GetStringReferenceInfo(Address address);
 
 std::vector<Byte> GetSectionBytes(ea_t segment_start_address);
 int GetPermissions(const segment_t* ida_segment);

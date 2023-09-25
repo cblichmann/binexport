@@ -41,14 +41,14 @@ Expression* Expression::Create(const Expression* parent,
                                Type type, uint16_t position, bool relocatable) {
   Expression expression(parent, symbol, immediate, type, position, relocatable);
   const std::string signature = expression.CreateSignature();
-  ExpressionCache::iterator i = expression_cache_.find(signature);
-  if (i != expression_cache_.end()) {
-    return &i->second;
+
+  auto [it, did_insert] =
+      expression_cache_.try_emplace(signature, std::move(expression));
+  if (did_insert) {
+    // The id should be a count of how many objects are already in the cache.
+    it->second.id_ = ++global_id_;
   }
-  // Id should simply be a count of how many objects are already in the cache.
-  expression.id_ = ++global_id_;
-  return &expression_cache_.insert(std::make_pair(signature, expression))
-              .first->second;
+  return &it->second;
 }
 
 void Expression::EmptyCache() {
@@ -110,12 +110,13 @@ std::string Expression::CreateSignature() {
 std::ostream& operator<<(std::ostream& stream, const Expression& expression) {
   if (expression.IsDereferenceOperator()) {
     stream << "[";
-  } else if (!expression.GetSymbol().empty()) {
-    stream << expression.GetSymbol();
-  } else if (expression.GetImmediate() >= 0) {
-    stream << std::hex << expression.GetImmediate();
+  } else if (const std::string& symbol = expression.GetSymbol();
+             !symbol.empty()) {
+    stream << symbol;
+  } else if (int64_t immediate = expression.GetImmediate(); immediate >= 0) {
+    stream << std::hex << immediate;
   } else {
-    stream << "-" << std::hex << -expression.GetImmediate();
+    stream << "-" << std::hex << -immediate;
   }
 
   // TODO(cblichmann): Reimplement using RenderExpression in instruction.cc
@@ -142,7 +143,7 @@ std::pair<int, int> GetSourceExpressionId(const Instruction& instruction,
     int expression_index = 0;
     for (const auto* expression : *operand) {
       if (expression->IsImmediate() &&
-          (Address)expression->GetImmediate() == target) {
+          static_cast<Address>(expression->GetImmediate()) == target) {
         return {operand_index, expression_index};
       }
       ++expression_index;

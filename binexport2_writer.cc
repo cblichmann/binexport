@@ -659,6 +659,7 @@ void WriteDataReferences(
   }
   for (const auto& reference : address_references) {
     if (reference.kind_ != TYPE_DATA) {
+      // Do not write references with TYPE_DATA_PARTIAL
       continue;
     }
     // Invalid reference.

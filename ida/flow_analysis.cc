@@ -127,6 +127,29 @@ bool IsUnconditionalJump(const insn_t& instruction) {
   return count == 1;
 }
 
+std::pair<std::string, bool> GetStringReference2(ea_t address) {
+  xrefblk_t xrefs;
+  if (xrefs.first_from(address, XREF_DATA) == 0) {
+    return {};
+  }
+  while (!xrefs.iscode) {
+    if ((xrefs.type == dr_O) && (is_strlit(get_flags(xrefs.to)))) {
+      // if (is_strlit(get_flags(xrefs.to))) {
+      qstring value;
+      uint32_t string_type = get_str_type(get_item_head(xrefs.to));
+      get_strlit_contents(&value, xrefs.to, /*len=*/-1 /* Compute length */,
+                          string_type,
+                          /*maxcps=*/nullptr, STRCONV_REPLCHAR);
+      return {ToString(value), (string_type & STRWIDTH_2B) != 0};
+    }
+
+    if (xrefs.next_from() == 0) {
+      break;
+    }
+  }
+  return {};
+}
+
 void AnalyzeFlow(const insn_t& ida_instruction, Instruction* instruction,
                  FlowGraph* flow_graph, CallGraph* call_graph,
                  AddressReferences* address_references,
@@ -211,7 +234,6 @@ void AnalyzeFlow(const insn_t& ida_instruction, Instruction* instruction,
           address_references->emplace_back(
               ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
               xref.to, TYPE_UNCONDITIONAL);
-          handled = true;
         } else {
           Address next_address = instruction->GetNextInstruction();
           if (GetArchitecture() == kMips) {
@@ -234,8 +256,8 @@ void AnalyzeFlow(const insn_t& ida_instruction, Instruction* instruction,
           address_references->emplace_back(
               ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
               xref.to, TYPE_TRUE);
-          handled = true;
         }
+        handled = true;
         entry_point_adder->Add(xref.to, EntryPoint::Source::JUMP_DIRECT);
       } else {
         LOG(INFO) << absl::StrCat("unknown xref ",
@@ -244,33 +266,38 @@ void AnalyzeFlow(const insn_t& ida_instruction, Instruction* instruction,
     }
   }
 
-  if (!handled) {
-    if (is_call_insn(ida_instruction)) {  // Call to imported function or call
-                                          // [offset+eax*4]
+  if (handled) {
+    return;
+  }
+
+  if (is_call_insn(ida_instruction)) {  // Call to imported function or call
+                                        // [offset+eax*4]
+    for (bool ok = xref.first_from(ida_instruction.ea, XREF_DATA); ok;
+         ok = xref.next_from()) {
+      if (IsPossibleFunction(xref.to, modules)) {
+        call_graph->AddFunction(xref.to);
+        call_graph->AddEdge(ida_instruction.ea, xref.to);
+        entry_point_adder->Add(xref.to, EntryPoint::Source::CALL_TARGET);
+      }
+      instruction->SetFlag(FLAG_CALL, true);
+      address_references->emplace_back(
+          ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+          xref.to, TYPE_CALL_INDIRECT);
+    }
+  } else {
+    auto [string_ref, wide_string] = GetStringReference2(ida_instruction.ea);
+    if (!string_ref.empty()) {
+      address_references->emplace_back(
+          ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+          xref.to, !wide_string ? TYPE_DATA_STRING : TYPE_DATA_WIDE_STRING,
+          string_ref.size());
+    } else {
+      // Assume data reference as in "push aValue"
       for (bool ok = xref.first_from(ida_instruction.ea, XREF_DATA); ok;
            ok = xref.next_from()) {
-        if (IsPossibleFunction(xref.to, modules)) {
-          call_graph->AddFunction(xref.to);
-          call_graph->AddEdge(ida_instruction.ea, xref.to);
-          entry_point_adder->Add(xref.to, EntryPoint::Source::CALL_TARGET);
-        }
-        instruction->SetFlag(FLAG_CALL, true);
         address_references->emplace_back(
             ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
-            xref.to, TYPE_CALL_INDIRECT);
-      }
-    } else {  // Assume data reference as in "push aValue"
-      for (bool ok = xref.first_from(ida_instruction.ea, XREF_DATA); ok;
-           ok = xref.next_from()) {
-        if (!GetStringReference(ida_instruction.ea).empty()) {
-          address_references->emplace_back(
-              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
-              xref.to, TYPE_DATA_STRING);
-        } else {
-          address_references->emplace_back(
-              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
-              xref.to, TYPE_DATA);
-        }
+            xref.to, TYPE_DATA);
       }
     }
   }
@@ -391,36 +418,31 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
   call_graph->PostProcessComments();
 
   LOG(INFO) << "IDA specific post processing";
-  // Ida specific post processing.
-  for (auto i = flow_graph->GetFunctions().begin(),
-            end = flow_graph->GetFunctions().end();
-       i != end; ++i) {
-    Function& function = *i->second;
+  // IDA specific post processing.
+  for (auto& entry : flow_graph->GetFunctions()) {
+    Function& function = *entry.second;
     const Address address = function.GetEntryPoint();
     // - set function name
-    const std::string name = GetName(address, true);
-    if (!name.empty()) {
+    if (const std::string name = GetName(address, true); !name.empty()) {
       function.SetName(name, GetDemangledName(address));
     }
     // - set function type
-    const func_t* ida_func = get_func(address);
-    if (ida_func) {
+    if (const func_t* ida_func = get_func(address)) {
       if ((ida_func->flags & FUNC_THUNK)  // give thunk preference over library
-          && function.GetBasicBlocks().size() == 1 &&
-          (*function.GetBasicBlocks().begin())->GetInstructionCount() == 1) {
+          && basic_blocks.size() == 1 &&
+          (*basic_blocks.begin())->GetInstructionCount() == 1) {
         function.SetType(Function::TYPE_THUNK);
       } else if (ida_func->flags & FUNC_LIB) {
         function.SetType(Function::TYPE_LIBRARY);
       }
     }
-    const std::string module = GetModuleName(address, modules);
-    if (!module.empty()) {
+    if (const std::string module = GetModuleName(address, modules);
+        !module.empty()) {
       function.SetType(Function::TYPE_IMPORTED);
       function.SetModuleName(module);
-    }
-    if (function.GetType(true) == Function::TYPE_NONE ||
-        function.GetType(false) == Function::TYPE_STANDARD) {
-      if (function.GetBasicBlocks().empty()) {
+    } else if (function.GetType() == Function::TYPE_NONE ||
+               function.GetTypeHeuristic() == Function::TYPE_STANDARD) {
+      if (basic_blocks.empty()) {
         function.SetType(Function::TYPE_IMPORTED);
       } else {
         function.SetType(Function::TYPE_STANDARD);

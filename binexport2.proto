@@ -390,12 +390,12 @@ message BinExport2 {
 
   repeated string string_table = 9;
 
-  // No longer written. This is here so that BinDiff can work with older
-  // BinExport files.
+  // No longer written. BinDiff 8 no longer uses this.
   repeated Reference address_comment = 10 [deprecated = true];
 
   // Rich comment index used for BinDiff's comment porting.
   repeated Comment comment = 17;
+
   repeated Reference string_reference = 11;
   repeated Reference expression_substitution = 12;
   repeated Section section = 13;

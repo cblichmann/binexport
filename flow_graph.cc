@@ -30,7 +30,7 @@
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
 FlowGraph::~FlowGraph() {
-  for (auto function : functions_) {
+  for (auto& function : functions_) {
     delete function.second;
   }
 }

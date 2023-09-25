@@ -210,19 +210,16 @@ std::string GetStringReference(ea_t address) {
   if (xrefs.first_from(address, XREF_DATA) == 0) {
     return "";
   }
-
   while (!xrefs.iscode) {
     if ((xrefs.type == dr_O) && (is_strlit(get_flags(xrefs.to)))) {
-      size_t length = get_max_strlit_length(xrefs.to, STRTYPE_C);
-      if (length == 2) {
-        length = get_max_strlit_length(xrefs.to, STRTYPE_C_16);
-      }
-
-      std::string value(length, ' ');
-      for (size_t i = 0; i < length; ++i) {
-        value[i] = get_byte(xrefs.to + i);
-      }
-      return value;
+      // if (is_strlit(get_flags(xrefs.to))) {
+      // LOG(INFO) << "GetStringReference: " << FormatAddress(address);
+      qstring value;
+      get_strlit_contents(&value, xrefs.to, /*len=*/-1 /* Compute length */,
+                          get_str_type(get_item_head(xrefs.to)),
+                          /*maxcps=*/nullptr, STRCONV_REPLCHAR);
+      // LOG(INFO) << "=> " << ToString(value);
+      return ToString(value);
     }
 
     if (xrefs.next_from() == 0) {
@@ -230,6 +227,27 @@ std::string GetStringReference(ea_t address) {
     }
   }
   return "";
+}
+
+StringReferenceInfo GetStringReferenceInfo(Address address) {
+  xrefblk_t xrefs;
+  if (xrefs.first_from(address, XREF_DATA) == 0) {
+    return {};
+  }
+  while (!xrefs.iscode) {
+    if ((xrefs.type == dr_O) && (is_strlit(get_flags(xrefs.to)))) {
+      qstring value;
+      get_strlit_contents(&value, xrefs.to, /*len=*/-1 /* Compute length */,
+                          get_str_type(get_item_head(xrefs.to)),
+                          /*maxcps=*/nullptr, STRCONV_REPLCHAR);
+      return ToString(value);
+    }
+
+    if (xrefs.next_from() == 0) {
+      break;
+    }
+  }
+  return {};
 }
 
 std::string GetRegisterName(size_t index, size_t bit_width) {
@@ -437,7 +455,6 @@ int GetPermissions(const segment_t* ida_segment) {
 void GetRegularComments(Address address, Comments* comments) {
   qstring ida_comment;
   if (get_cmt(&ida_comment, address, /*rptble=*/false) > 0) {
-    // TODO(cblichmann): Benchmark against caching an absl::string_view.
     comments->emplace_back(address, UA_MAXOP + 1,
                            CallGraph::CacheString(std::string(
                                ida_comment.c_str(), ida_comment.length())),

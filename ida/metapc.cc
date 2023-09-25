@@ -367,9 +367,9 @@ Operands ParseOperandsIdaMetaPc(const insn_t& instruction,
                                 FlowGraph* flow_graph) {
   Operands operands;
   uint8_t skipped = 0;
+  Expressions expressions;
   for (uint8_t operand_position = 0; operand_position < UA_MAXOP;
        ++operand_position) {
-    Expressions expressions;
     const op_t& operand = instruction.ops[operand_position];
     if (operand.type == o_void) {
       break;
@@ -380,6 +380,7 @@ Operands ParseOperandsIdaMetaPc(const insn_t& instruction,
     }
 
     Expression* expression = nullptr;
+    expressions.clear();
     size_t operand_size = GetOperandByteSize(instruction, operand);
     switch (operand.type) {
       case o_trreg:   // Test register
@@ -402,7 +403,7 @@ Operands ParseOperandsIdaMetaPc(const insn_t& instruction,
         expressions.push_back(expression);
         break;
 
-      case o_reg:  // register
+      case o_reg:  // General register
         if (operand_size != 0) {
           expression =
               Expression::Create(expression, GetSizePrefix(operand_size), 0,
@@ -470,7 +471,7 @@ Operands ParseOperandsIdaMetaPc(const insn_t& instruction,
     operands.push_back(Operand::CreateOperand(expressions));
   }
 
-  Operands(operands).swap(operands);
+  operands.shrink_to_fit();
   return operands;
 }
 

@@ -147,11 +147,10 @@ void DumpBinExport2(const BinExport2& proto) {
                  absl::FormatTime(absl::FromTimeT(meta.timestamp())));
   }
 
-  // Read address comments.
-  absl::flat_hash_map<int, int> comment_index_map;
-  // NOLINTNEXTLINE(build/deprecated)
-  for (const auto& reference : proto.address_comment()) {
-    comment_index_map[reference.instruction_index()] =
+  // Read string references.
+  absl::flat_hash_map<int, int> string_reference_map;
+  for (const auto& reference : proto.string_reference()) {
+    string_reference_map[reference.instruction_index()] =
         reference.string_table_index();
   }
 
@@ -199,14 +198,17 @@ void DumpBinExport2(const BinExport2& proto) {
         const int end_index = instruction_index_range.has_end_index()
                                   ? instruction_index_range.end_index()
                                   : begin_index + 1;
-        for (int i = begin_index; i < end_index; ++i) {
-          const auto& instruction = proto.instruction(i);
+        for (int instruction_index = begin_index; instruction_index < end_index;
+             ++instruction_index) {
+          const auto& instruction = proto.instruction(instruction_index);
           Address instruction_address = computed_instruction_address;
-          if (last_instruction_index != i - 1 || instruction.has_address()) {
-            instruction_address = GetInstructionAddress(proto, i);
+          if (last_instruction_index != instruction_index - 1 ||
+              instruction.has_address()) {
+            instruction_address =
+                GetInstructionAddress(proto, instruction_index);
           }
 
-          if (i == begin_index) {
+          if (instruction_index == begin_index) {
             basic_block_address = instruction_address;
             const auto line =
                 absl::StrCat(FormatAddress(basic_block_address),
@@ -217,16 +219,22 @@ void DumpBinExport2(const BinExport2& proto) {
           auto disassembly = absl::StrCat(
               "                ",
               proto.mnemonic(instruction.mnemonic_index()).name(), " ");
-          for (int i = 0; i < instruction.operand_index_size(); i++) {
-            const auto& operand = proto.operand(instruction.operand_index(i));
-            for (int j = 0; j < operand.expression_index_size(); j++) {
+          for (int operand_index = 0;
+               operand_index < instruction.operand_index_size();
+               ++operand_index) {
+            const auto& operand =
+                proto.operand(instruction.operand_index(operand_index));
+            for (int expression_index = 0;
+                 expression_index < operand.expression_index_size();
+                 ++expression_index) {
               const auto& expression =
-                  proto.expression(operand.expression_index(j));
+                  proto.expression(operand.expression_index(expression_index));
               if (!expression.has_parent_index()) {
-                RenderExpression(proto, operand, j, &disassembly);
+                RenderExpression(proto, operand, expression_index,
+                                 &disassembly);
               }
             }
-            if (i != instruction.operand_index_size() - 1) {
+            if (operand_index != instruction.operand_index_size() - 1) {
               absl::StrAppend(&disassembly, ", ");
             }
           }
@@ -234,8 +242,9 @@ void DumpBinExport2(const BinExport2& proto) {
           std::string line = absl::StrCat(FormatAddress(instruction_address),
                                           " ", disassembly);
           absl::PrintF("%s", line.c_str());
+          const auto indent = line.size();
+          bool need_newline = true;
           if (instruction.comment_index_size() > 0) {
-            const auto indent = line.size();
             for (int i = 0; i < instruction.comment_index_size(); ++i) {
               int comment_index = instruction.comment_index(i);
               const auto& proto_comment = proto.comment(comment_index);
@@ -243,13 +252,22 @@ void DumpBinExport2(const BinExport2& proto) {
               absl::PrintF("%*s%s\n", (i > 0 ? indent : 0) + 3, " ; ",
                            proto.string_table(comment_index));
             }
-          } else {
+            need_newline = false;
+          }
+          if (auto it = string_reference_map.find(instruction_index);
+                     it != string_reference_map.end()) {
+            int string_index = it->second;
+            absl::PrintF("%*s\"%s\"\n", /*indent +*/ 3, " ; ",
+                         proto.string_table(string_index));
+            need_newline = false;
+          }
+          if (need_newline) {
             absl::PrintF("\n");
           }
 
           const auto& raw_bytes = instruction.raw_bytes();
           computed_instruction_address = instruction_address + raw_bytes.size();
-          last_instruction_index = i;
+          last_instruction_index = instruction_index;
         }
       }
     }

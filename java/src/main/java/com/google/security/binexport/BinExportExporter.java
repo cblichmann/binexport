@@ -85,7 +85,7 @@ public class BinExportExporter extends Exporter {
 
     monitor.setCancelEnabled(true);
     try {
-      final var builder = new BinExport2Builder(program);
+      final var builder = new BinExport2Builder(program, addrSet);
       if (remapMnemonics) {
         builder
             .setMnemonicMapper(new IdaProMnemonicMapper(program.getLanguage()));

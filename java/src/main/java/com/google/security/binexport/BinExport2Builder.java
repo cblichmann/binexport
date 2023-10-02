@@ -17,13 +17,20 @@ package com.google.security.binexport;
 import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
+import com.google.security.zynamics.BinExport.BinExport2.Comment.Type;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressIterator;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.CodeBlockReference;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.CodeUnitFormat;
 import ghidra.program.model.listing.CodeUnitFormatOptions;
+import ghidra.program.model.listing.CodeUnitIterator;
+import ghidra.program.model.listing.Data;
+import ghidra.program.model.listing.DataIterator;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Instruction;
@@ -44,6 +51,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -61,6 +70,7 @@ public class BinExport2Builder {
   private TaskMonitor monitor;
 
   private final Program program;
+  private final AddressSetView addrSet;
   private final Listing listing;
   private final BasicBlockModel bbModel;
 
@@ -68,8 +78,9 @@ public class BinExport2Builder {
   private long addressOffset = 0;
   private boolean prependNamespace = false;
 
-  public BinExport2Builder(Program ghidraProgram) {
+  public BinExport2Builder(Program ghidraProgram, AddressSetView ghidraAddrSet) {
     program = ghidraProgram;
+    addrSet = ghidraAddrSet;
     listing = program.getListing();
     bbModel = new BasicBlockModel(program, true);
   }
@@ -407,6 +418,67 @@ public class BinExport2Builder {
     }
   }
 
+  private void buildStrings(Map<Long, Integer> instructionIndices) {
+    monitor.setMessage("Exporting strings");
+    monitor.setIndeterminate(true);
+    Data data;
+    String type;
+    var strToInstr = new ArrayList<Map.Entry<Integer, Integer>>();
+    for (DataIterator dataIt = listing.getDefinedData(true);
+        dataIt.hasNext() && !monitor.isCancelled(); ) {
+      data = dataIt.next();
+      type = data.getDataType().getName().toLowerCase(Locale.ROOT);
+      if ((!type.contains("unicode") && !type.contains("string")) || data.isEmpty()) {
+        continue;
+      }
+      builder.addStringTable(data.getDefaultValueRepresentation());
+      int strIdx = builder.getStringTableCount();
+
+      long address = getMappedAddress(data.getAddress());
+      Integer instrIdx = instructionIndices.get(address);
+      if (instrIdx == null) {
+        continue;
+      }
+      strToInstr.add(Map.entry(strIdx, instrIdx));
+    }
+    for (var entry : strToInstr) {
+      builder.addStringReferenceBuilder()
+          .setInstructionIndex(entry.getValue())
+          .setStringTableIndex(entry.getKey());
+    }
+  }
+
+  private void buildComments(Map<Long, Integer> instructionIndices) {
+    monitor.setMessage("Exporting comments");
+    monitor.setIndeterminate(true);
+    for (int commentType : List.of(CodeUnit.EOL_COMMENT)) {
+      for (CodeUnitIterator codeIt = listing.getCommentCodeUnitIterator(commentType, addrSet);
+          codeIt.hasNext() && !monitor.isCancelled(); ) {
+        CodeUnit code = codeIt.next();
+        long address = getMappedAddress(code.getMinAddress());
+        Integer instrIdx = instructionIndices.get(address);
+        if (instrIdx == null) {
+          continue;
+        }
+
+        // TODO(cblichmann): Deduplicate!
+        builder.addStringTable(code.getComment(commentType));
+        int strIdx = builder.getStringTableCount();
+
+        builder.addCommentBuilder()
+            .setInstructionIndex(instrIdx)
+            .setStringTableIndex(strIdx)
+            .setRepeatable(false)
+            .setType(Type.DEFAULT)
+        ;
+        int commentIdx = builder.getCommentCount();
+
+        builder.getInstructionBuilder(instrIdx)
+            .addCommentIndex(commentIdx);
+      }
+    }
+  }
+
   private void buildSections() {
     monitor.setMessage("Exporting sections");
     monitor.setIndeterminate(false);
@@ -529,10 +601,9 @@ public class BinExport2Builder {
     monitor.setMessage("Exporting basic block structure");
     var basicBlockIndices = new HashMap<Long, Integer>();
     buildBasicBlocks(instructionIndices, basicBlockIndices);
-    // TODO(cblichmann): Implement these:
-    // buildComments()
-    // buildStrings();
-    // buildDataReferences()
+    buildComments(instructionIndices);
+    buildStrings(instructionIndices);
+    // TODO(cblichmann): Implement buildDataReferences()
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);
     monitor.setMessage("Exporting call graph");

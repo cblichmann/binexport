@@ -27,7 +27,7 @@ jobs:
       run: |
         mkdir -p "${{ runner.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
+        unzip -q "${{ runner.workspace }}/build/idasdk91.zip" \
               -d "${{ runner.workspace }}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
@@ -50,7 +50,7 @@ jobs:
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
+          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk91"
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build

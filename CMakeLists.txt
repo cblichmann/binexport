@@ -75,10 +75,12 @@ configure_file(version.cc.in version.cc ESCAPE_QUOTES @ONLY)
 
 # Plugin names for IDA Pro and Binary Ninja
 if(BINEXPORT_ENABLE_IDAPRO)
-  set(binexport_ida_plugin_name binexport${binexport_VERSION_MAJOR}_ida)
+  set(binexport_ida_plugin_name
+    "binexport${binexport_VERSION_MAJOR}_ida${BINEXPORT_IDAPRO_PLUGIN_NAME_EXTRA_SUFFIX}"
+  )
 endif()
 if(BINEXPORT_ENABLE_BINARYNINJA)
-  set(binexport_bn_plugin_name binexport${binexport_VERSION_MAJOR}_binaryninja)
+  set(binexport_bn_plugin_name "binexport${binexport_VERSION_MAJOR}_binaryninja")
 endif()
 
 # Interface library with include paths used by BinExport

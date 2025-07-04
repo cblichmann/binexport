@@ -27,6 +27,8 @@ jobs:
       run: |
         mkdir -p "${{ runner.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
+        unzip -q "${{ runner.workspace }}/build/idasdk91.zip" \
+              -d "${{ runner.workspace }}/build/"
         unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
               -d "${{ runner.workspace }}/build/"
 
@@ -44,15 +46,15 @@ jobs:
         cmakeVersion: 4.0.2
         ninjaVersion: 1.12.1
 
-    - name: Configure CMake
+    - name: Configure CMake (default build)
       working-directory: ${{ runner.workspace }}/build
       shell: bash
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
+          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk91"
 
-    - name: Build
+    - name: Build (default)
       working-directory: ${{ runner.workspace }}/build
       shell: bash
       run: cmake --build . --config "${BUILD_TYPE}"
@@ -61,6 +63,22 @@ jobs:
       working-directory: ${{ runner.workspace }}/build
       shell: bash
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
+
+    - name: Configure CMake (IDA Pro 8.x plugin build)
+      working-directory: ${{ runner.workspace }}/build
+      shell: bash
+      run: |
+        cmake "${{ github.workspace }}" -G Ninja \
+          "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
+          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
+          "-DBINEXPORT_IDAPRO_PLUGIN_NAME_EXTRA_SUFIX=8"
+
+    - name: Build (IDA Pro 8.x plugin build)
+      working-directory: ${{ runner.workspace }}/build
+      shell: bash
+      run: |
+        cmake --build . --config "${BUILD_TYPE}" \
+          --target binexport12_ida8 binexport12_ida864
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4

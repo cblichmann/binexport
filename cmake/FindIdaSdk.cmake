@@ -83,7 +83,7 @@ find_package_handle_standard_args(IdaSdk
 )
 
 # Determine the IDA SDK version
-set(IDA_SDK_VERSION 999)          # Preload to IDA9 as a fail-safe
+set(IDA_SDK_VERSION 999)  # Preload to IDA 9 as a fail-safe
 if(NOT IdaSdk_ASSUME_VERSION8)
   find_file(version_file "pro.h" ${IdaSdk_INCLUDE_DIRS})
   if(EXISTS ${version_file})
@@ -95,20 +95,14 @@ if(NOT IdaSdk_ASSUME_VERSION8)
     message(STATUS "unable to find IDA Version file: ${version_file}")
   endif()
 else()
-  set(IDA_SDK_VERSION 840)
+  set(IDA_SDK_VERSION 820)
 endif()
 
-message(STATUS "IDA_SDK_VERSION = ${IDA_SDK_VERSION}")
+message(STATUS "IDA SDK version: ${IDA_SDK_VERSION}")
 
 # Define some platform specific variables for later use.
 set(_so "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(_so64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
-# _plx, _plx64, _llx, _llx64 are kept to stay compatible with older
-# CMakeLists.txt files.
-set(_plx "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-set(_plx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
-set(_llx "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-set(_llx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
 
 function(_ida_get_libpath_suffixes var basename)
   # IDA SDK 8.3 introduced lib path suffixes per edition
@@ -316,16 +310,16 @@ endfunction()
 
 function(_ida_plugin name ea64 link_script)  # ARGN contains sources
   if(ea64)
-    set(t ${name}${_so64})
+    set(t ${name}64)
   else()
-    set(t ${name}${_so})
+    set(t ${name})
   endif()
 
   # Define a module with the specified sources.
   add_library(${t} MODULE ${ARGN})
   _ida_common_target_settings(${t} ${ea64})
 
-  set_target_properties(${t} PROPERTIES PREFIX "" SUFFIX "")
+  set_target_properties(${t} PROPERTIES PREFIX "" SUFFIX "${_so}")#DBG
   if(ea64)
     target_link_libraries(${t} ida64)
   else()
@@ -396,24 +390,21 @@ endfunction()
 
 function(ida_target_link_libraries name)
   foreach(item IN LISTS ARGN)
-    if(TARGET ${item}_ea32 OR TARGET ${item}_ea64)
-      if(TARGET ${item}_ea32)
-        list(APPEND args32 ${item}_ea32)
-      endif()
-      if(TARGET ${item}_ea64)
-        list(APPEND args64 ${item}_ea64)
-      endif()
+    if(TARGET ${item}_ea32)
+      list(APPEND args32 ${item}_ea32)
+    elseif(TARGET ${item}_ea64)
+      list(APPEND args64 ${item}_ea64)
     else()
       list(APPEND args ${item})
     endif()
   endforeach()
-  foreach(target ${name}${_so} ${name}_ea32)
+  foreach(target ${name} ${name}_ea32)
     if(TARGET ${target})
       target_link_libraries(${target} ${args32} ${args})
       set(added TRUE)
     endif()
   endforeach()
-  foreach(target ${name}${_so64} ${name}_ea64)
+  foreach(target ${name}64 ${name}_ea64)
     if(TARGET ${target})
       target_link_libraries(${target} ${args64} ${args})
       set(added TRUE)
@@ -425,7 +416,7 @@ function(ida_target_link_libraries name)
 endfunction()
 
 function(ida_target_include_directories name)
-  foreach(target ${name}${_so} ${name}${_so64}
+  foreach(target ${name} ${name}64
                  ${name}_ea32 ${name}_ea64)
     if(TARGET ${target})
       target_include_directories(${target} ${ARGN})
@@ -438,7 +429,7 @@ function(ida_target_include_directories name)
 endfunction()
 
 function(set_ida_target_properties name)
-  foreach(target ${name}${_so} ${name}${_so64}
+  foreach(target ${name} ${name}64
                  ${name}_ea32 ${name}_ea64)
     if(TARGET ${target})
       set_target_properties(${target} ${ARGN})
@@ -452,13 +443,8 @@ endfunction()
 
 function(ida_install)
   foreach(item IN LISTS ARGN)
-    if(TARGET ${item}${_so} OR TARGET ${item}${_so64})
-      if(TARGET ${item}${_so})
-        list(APPEND args ${item}${_so})
-      endif()
-      if(TARGET ${item}${_so64})
-        list(APPEND args ${item}${_so64})
-      endif()
+    if(TARGET ${item}64)
+      list(APPEND args ${item}64)
     else()
       list(APPEND args ${item})
     endif()

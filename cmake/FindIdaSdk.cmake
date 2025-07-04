@@ -85,14 +85,15 @@ find_package_handle_standard_args(IdaSdk
 # Determine the IDA SDK version
 set(IDA_SDK_VERSION 999)          # Preload to IDA9 as a fail-safe
 if(NOT IdaSdk_ASSUME_VERSION8)
-  find_file(version_file "pro.h" ${IdaSdk_INCLUDE_DIRS})
-  if(EXISTS ${version_file})
-    file(STRINGS "${version_file}" contents REGEX "#define IDA_SDK_VERSION ")
-    if(contents MATCHES "#define IDA_SDK_VERSION[ ]+([0-9]+)")
+  find_file(IdaSdk_VERSION_FILE "pro.h" ${IdaSdk_INCLUDE_DIRS})
+  if(IdaSdk_VERSION_FILE)
+    file(STRINGS "${IdaSdk_VERSION_FILE}" _version
+         REGEX "#define IDA_SDK_VERSION ")
+    if(_version MATCHES "#define IDA_SDK_VERSION[ ]+([0-9]+)")
       set(IDA_SDK_VERSION "${CMAKE_MATCH_1}")
     endif()
   else()
-    message(STATUS "unable to find IDA Version file: ${version_file}")
+    message(STATUS "unable to find IDA Version file: ${IdaSdk_VERSION_FILE}")
   endif()
 else()
   set(IDA_SDK_VERSION 840)

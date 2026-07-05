@@ -60,7 +60,7 @@ absl::optional<Architecture> GetSupportedArchitecture(const BinExport2& proto) {
   if (architecture == "x86-64") {
     return Architecture::kX86Arch64;
   }
-  return absl::nullopt;
+  return std::nullopt;
 }
 
 uint32_t GetEdgeTypeFromProto(BinExport2::FlowGraph::Edge::Type type) {

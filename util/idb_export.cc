@@ -47,7 +47,7 @@ constexpr const char* OptionBool(bool value) {
 }  // namespace
 
 void IdbExporter::AddDatabase(std::string path) {
-  absl::MutexLock lock{&queue_mutex_};
+  absl::MutexLock lock{queue_mutex_};
   idb_paths_.push_back(std::move(path));
 }
 
@@ -111,7 +111,7 @@ absl::Status IdbExporter::Export(
       while (true) {
         std::string idb_path;
         {
-          absl::MutexLock lock(&queue_mutex_);
+          absl::MutexLock lock(queue_mutex_);
           if (idb_paths_.empty()) {
             break;
           }

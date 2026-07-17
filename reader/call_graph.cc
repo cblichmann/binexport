@@ -134,7 +134,7 @@ std::unique_ptr<CallGraph> CallGraph::FromBinExport2Proto(
     }
   }
 
-  auto call_graph = absl::make_unique<CallGraph>();
+  auto call_graph = std::make_unique<CallGraph>();
   call_graph->graph_ =
       Graph(boost::edges_are_unsorted_multi_pass, edges.begin(), edges.end(),
             call_graph_proto.vertex_size());

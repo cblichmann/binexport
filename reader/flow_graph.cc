@@ -174,7 +174,7 @@ std::unique_ptr<FlowGraph> FlowGraph::FromBinExport2Proto(
 absl::StatusOr<std::unique_ptr<FlowGraph>> FlowGraph::FromBinExport2(
     const BinExport2& proto, const BinExport2::FlowGraph& flow_graph_proto,
     const std::vector<Address>& instruction_addresses) {
-  auto flow_graph = absl::make_unique<FlowGraph>();
+  auto flow_graph = std::make_unique<FlowGraph>();
   if (flow_graph_proto.entry_basic_block_index() < 0 ||
       flow_graph_proto.entry_basic_block_index() >= proto.basic_block_size()) {
     return absl::InvalidArgumentError(absl::StrCat(

@@ -89,7 +89,7 @@ TEST(AssignOrReturn, MovesUniquePtr) {
   auto func = []() -> absl::Status {
     std::unique_ptr<int> ptr;
     NA_ASSIGN_OR_RETURN(
-        ptr, absl::StatusOr<std::unique_ptr<int>>(absl::make_unique<int>(1)));
+        ptr, absl::StatusOr<std::unique_ptr<int>>(std::make_unique<int>(1)));
     EXPECT_EQ(*ptr, 1);
     return absl::UnknownError("EXPECTED");
   };
@@ -113,10 +113,10 @@ TEST(AssignOrReturn, MovesUniquePtrRepeatedlyToSingleVariable) {
   auto func = []() -> absl::Status {
     std::unique_ptr<int> ptr;
     NA_ASSIGN_OR_RETURN(
-        ptr, absl::StatusOr<std::unique_ptr<int>>(absl::make_unique<int>(1)));
+        ptr, absl::StatusOr<std::unique_ptr<int>>(std::make_unique<int>(1)));
     EXPECT_EQ(*ptr, 1);
     NA_ASSIGN_OR_RETURN(
-        ptr, absl::StatusOr<std::unique_ptr<int>>(absl::make_unique<int>(2)));
+        ptr, absl::StatusOr<std::unique_ptr<int>>(std::make_unique<int>(2)));
     EXPECT_EQ(*ptr, 2);
     return absl::UnknownError("EXPECTED");
   };

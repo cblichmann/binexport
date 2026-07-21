@@ -16,7 +16,7 @@ cmake "${src_dir}/binexport/" \
   -DCMAKE_BUILD_TYPE=Release \
   -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
   "-DCMAKE_INSTALL_PREFIX=${out_dir}" \
-  "-DIdaSdk_ROOT_DIR=${deps_dir}/idasdk"
+  "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${deps_dir}/idasdk"
 cmake --build . --config Release
 ctest --build-config Release --output-on-failure -R '^[A-Z]'
 cmake --install . --config Release --strip

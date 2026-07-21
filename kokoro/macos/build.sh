@@ -37,13 +37,13 @@ cmake "${src_dir}/binexport" \
   -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
   "-DFETCHCONTENT_SOURCE_DIR_ABSL=${KOKORO_ARTIFACTS_DIR}/git/absl" \
   "-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=${KOKORO_ARTIFACTS_DIR}/git/googletest" \
+  "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${KOKORO_PIPER_DIR}/google3/third_party/idasdk" \
   "-DFETCHCONTENT_SOURCE_DIR_PROTOBUF=${KOKORO_ARTIFACTS_DIR}/git/protobuf" \
   "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_RULE_MESSAGES=OFF \
   -DCMAKE_INSTALL_PREFIX=${out_dir} \
   -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
-  "-DIdaSdk_ROOT_DIR=${KOKORO_PIPER_DIR}/google3/third_party/idasdk"
 cmake --build . --config Release -- "-j$(sysctl -n hw.logicalcpu)"
 ctest --build-config Release --output-on-failure -R '^[A-Z]'
 cmake --install . --config Release --strip
@@ -59,5 +59,4 @@ codesign --force \
     --sign "Developer ID Application: Google LLC (EQHXZ8M8AV)" \
     --keychain "${HOME}/Library/Keychains/MacApplicationSigning.keychain" \
     "${out_dir}/binexport-prefix/binexport${binexport_release}_ida.dylib" \
-    "${out_dir}/binexport-prefix/binexport${binexport_release}_ida64.dylib" \
     "${out_dir}/binexport-prefix/binexport2dump"

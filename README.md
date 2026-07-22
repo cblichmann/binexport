@@ -1,14 +1,15 @@
 # BinExport
 
-Copyright 2011-2024 Google LLC.
+Copyright 2011-2026 Google LLC.
 
 [![Linux Build Status](https://github.com/google/binexport/workflows/linux-build/badge.svg)](https://github.com/google/binexport/actions?query=workflow%3Alinux-build)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/8977/badge.svg)](https://scan.coverity.com/projects/google-binexport)
+<!-- disableFinding("Ninja") -->
 
 Disclaimer: This is not an official Google product (experimental or otherwise),
 it is just code that happens to be owned by Google.
 
-# Table of Contents
+## Table of Contents
 
 *   [Introduction](#introduction)
 *   [Installation](#installation)
@@ -29,9 +30,6 @@ BinExport is the exporter component of
 the the disassemblers IDA Pro, Binary Ninja and Ghidra that exports disassembly
 data into the Protocol Buffer format that BinDiff requires.
 
-An experimental version for the open source software reverse engineering suite
-Ghidra is available in the `java/BinExport` directory.
-
 This repository contains the complete source code necessary to build BinExport
 plugin binaries for Linux, macOS and Windows.
 
@@ -39,23 +37,26 @@ plugin binaries for Linux, macOS and Windows.
 
 ### IDA Pro
 
-Download the binaries from the [releases](https://github.com/google/binexport/releases) page and copy them into the IDA Pro
-plugins directory. These are the default paths:
+Note: BinExport supports IDA Pro 9.4 or higher. Support for the older 8.x series
+has been discontinued.
 
-| OS      | Plugin path                                 |
-| ------- | ------------------------------------------- |
-| Linux   | `/opt/idapro-8.2/plugins`                   |
-| macOS   | `/Applications/IDA Pro 8.2/idabin/plugins`  |
-| Windows | `%ProgramFiles%\IDA 8.2\plugins`            |
+Download the binaries from the
+[releases](https://github.com/google/binexport/releases) page and copy them
+into the IDA Pro plugins directory. These are the default paths:
+
+| OS      | Plugin path                                                 |
+| ------- | ----------------------------------------------------------- |
+| Linux   | `/opt/ida-pro-9.4/plugins`                                  |
+| macOS   | `/Applications/IDA Professional 9.4/Contents/MacOS/plugins` |
+| Windows | `%ProgramFiles%\IDA 9.4\plugins`                            |
 
 To install just for the current user, copy the files into one of these
 directories instead:
 
-| OS          | Plugin                |
+| OS          | Plugin path                          |
 | ----------- | ------------------------------------ |
 | Linux/macOS | `~/.idapro/plugins`                  |
 | Windows     | `%AppData%\Hex-Rays\IDA Pro\plugins` |
-
 
 #### Verifying the installation version
 
@@ -65,18 +66,18 @@ directories instead:
 
     ![IDA addons dialog](/doc/binexport10-ida-addons-dialog.png)
 
-
 ### Binary Ninja
 
-Download the binaries from the [releases](https://github.com/google/binexport/releases) page and copy them into the Binary Ninja
-plugins directory. These are the default paths for the current user:
+Download the binaries from the
+[releases](https://github.com/google/binexport/releases) page and copy them
+into the Binary Ninja plugins directory. These are the default paths for the
+current user:
 
 | OS      | Plugin path                                           |
 | ------- | ----------------------------------------------------- |
 | Linux   | `~/.binaryninja/plugins`                              |
 | macOS   | `~/Library/Application Support/Binary Ninja/plugins/` |
 | Windows | `%AppData%\Binary Ninja\plugins`                      |
-
 
 #### Verifying the installation version
 
@@ -85,26 +86,29 @@ plugins directory. These are the default paths for the current user:
     `View`|`Native Docks`|`Show Log`.
 3.  If installed correctly, the log window contains a line similar to this one:
 
-```
+```text
 BinExport 12 (@internal, Jan 3 2023), (c)2004-2011 zynamics GmbH, (c)2011-2024 Google LLC.
 ```
 
 ### Ghidra
 
-1.  Download the binaries from the [releases](https://github.com/google/binexport/releases) page.
+1.  Download the binaries from the
+    [releases](https://github.com/google/binexport/releases) page.
 2.  Start Ghidra, select `File`|`Install Extensions...`
-3.  In the "Install Extensions" dialog, click the plus icon in the upper right to "Add extension".
-4.  In the "Select extension" dialog, enter the path to the `ghidra_BinExport.zip` you downloaded
-    in step 1 and click `OK`.
-5.  Click `OK` twice to close both the "Install Extensions" dialog and the notice to restart Ghidra.
+3.  In the "Install Extensions" dialog, click the plus icon in the upper right
+    to "Add extension".
+4.  In the "Select extension" dialog, enter the path to the
+    `ghidra_BinExport.zip` you downloaded in step 1 and click `OK`.
+5.  Click `OK` twice to close both the "Install Extensions" dialog and the
+    notice to restart Ghidra.
 6.  Exit Ghidra.
 
 #### Verifying the installation version
 
 1.  Start Ghidra
 2.  Select `File`|`Install Extensions...`
-3.  If installed correctly, the "Install Extensions" dialog should list the "BinExport" extension
-    next to a selected checkbox.
+3.  If installed correctly, the "Install Extensions" dialog should list the
+    "BinExport" extension next to a selected checkbox.
 
 ## Usage
 
@@ -190,19 +194,26 @@ directory.
 
 ### Ghidra
 
-1.  Open or create a project. For new projects, import a file first using `File`|`Import File...`
-2.  Right-click a file in the current project list and select `Export...` from the context menu.
-3.  In the "Export" dialog, under "Format", choose "Binary Export (v2) for BinDiff".
-4.  Under "Output File", enter the desired output file path. If the file extension is missing,
-    `.BinExport` will be appended automatically.
+1.  Open or create a project. For new projects, import a file first using
+    `File`|`Import File...`
+2.  Right-click a file in the current project list and select `Export...` from
+    the context menu.
+3.  In the "Export" dialog, under "Format", choose
+    "Binary Export (v2) for BinDiff".
+4.  Under "Output File", enter the desired output file path. If the file
+    extension is missing, `.BinExport` will be appended automatically.
 5.  Optional: click "Options..." to set additional export options.
-6.  Click "OK", then click "OK" again to dismiss the "Export Results Summary" dialog.
+6.  Click "OK", then click "OK" again to dismiss the "Export Results Summary"
+    dialog.
 
 #### Scripting
 
-The `BinExport.java` Ghidra script can be run in both headless and GUI mode. In GUI mode, it is available under the `BinExport` category in the Script Manager. For headless mode, a `BinExport.properties` file with the following content (or similar, depending on the options you want to use) can be used:
+The `BinExport.java` Ghidra script can be run in both headless and GUI mode.
+In GUI mode, it is available under the `BinExport` category in the Script
+Manager. For headless mode, a `BinExport.properties` file with the following
+content (or similar, depending on the options you want to use) can be used:
 
-```
+```text
 Choose export file Export = test.BinExport
 Choose options IDA Pro Compatibility = "Subtract Imagebase;Remap mnemonics;Prepend Namespace to Function Names"
 ```
@@ -211,18 +222,20 @@ Choose options IDA Pro Compatibility = "Subtract Imagebase;Remap mnemonics;Prepe
 
 Create a project, import and analyze a binary:
 
-```
+```bash
 $ ./analyzeHeadless <project_location> <project_name> -import <file>
 ```
-Run `BinExport.java` which will generate the `.BinExport` file specified in `BinExport.properties`:
 
-```
+Run `BinExport.java` which will generate the `.BinExport` file specified in
+`BinExport.properties`:
+
+```bash
 $ ./analyzeHeadless <project_location> <project_name> -process <file> -propertiesPath <path> -preScript BinExport.java -noanalysis
 ```
 
 Alternatively, use command-line arguments instead of `BinExport.properties`:
 
-```
+```bash
 $ ./analyzeHeadless <project_location> <project_name> -process <file> -preScript BinExport.java test.BinExport "Prepend Namespace to Function Names" -noanalysis
 ```
 
@@ -237,15 +250,15 @@ to the [BinExport for Ghidra](/java) instructions.
 There are quite a few dependencies to satisfy:
 
 *   Boost 1.83.0 or higher (a partial copy of 1.83.0 ships in `boost_parts`)
-*   [CMake](https://cmake.org/download/) 3.14 or higher
+*   [CMake](https://cmake.org/download/) 3.20 or higher
 *   Suggested: [Ninja](https://ninja-build.org/) for speedy builds
-*   GCC 9 or a recent version of Clang on Linux/macOS. On Windows, use the
-    Visual Studio 2019 compiler and the Windows SDK for Windows 10.
+*   GCC 15 or a recent version of Clang on Linux/macOS. On Windows, use the
+    Visual Studio 2022 compiler and the Windows SDK for Windows 11.
 *   Git 1.8 or higher
-*   IDA Pro only: IDA SDK 8.2 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
-    *   Abseil, GoogleTest and Protocol Buffers (25.2)
+    *   Abseil, GoogleTest and Protocol Buffers (35.1)
     *   Binary Ninja SDK
+    *   IDA SDK
 
 ### Linux
 
@@ -263,30 +276,18 @@ sudo apt install -qq --no-install-recommends build-essential
 Install the latest stable version of CMake:
 
 ```bash
-wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh
+wget https://github.com/Kitware/CMake/releases/download/v4.4.0/cmake-4.4.0-linux-x86_64.sh
 mkdir ${HOME}/cmake
-sh cmake-3.25.1-linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
+sh cmake-4.4.0-linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
 export PATH=${HOME}/cmake/bin:${PATH}
 ```
 
 The following sections assume that your current working directory is at the root
 of the cloned repository.
 
-#### IDA SDK
-
-Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA Pro 8.2:
-
-```bash
-unzip PATH/TO/idasdk_pro82.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk_pro82/* third_party/idasdk
-rmdir third_party/idasdk/idasdk_pro82
-```
-
 #### Build BinExport
 
-With all prerequisites in place, configure and build BinExport and run
-its tests:
+Configure and build BinExport and run its tests:
 
 ```bash
 mkdir -p build_linux && cd build_linux
@@ -295,8 +296,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     "-DCMAKE_INSTALL_PREFIX=${PWD}" \
     -DBINEXPORT_ENABLE_IDAPRO=ON \
-    "-DIdaSdk_ROOT_DIR=${PWD}/../third_party/idasdk" \
-    -DBINEXPORT_ENABLE_BINARYNINJA=ON \
+    -DBINEXPORT_ENABLE_BINARYNINJA=ON
 cmake --build . --config Release
 ctest --build-config Release --output-on-failure
 cmake --install . --config Release --strip
@@ -310,17 +310,15 @@ disable the Binary Ninja build, set `-DBINEXPORT_ENABLE_BINARYNINJA=OFF`.
 
 This will download and build Abseil, GoogleTest, Protocol Buffers and the
 Binary Ninja API. If all went well, the `build_linux/binexport-prefix`
-directory should contain two the files `binexport12_ida.so` and
-`binexport12_ida64.so` (for use with `ida` and `ida64`, respectively) as well
+directory should contain the file `binexport12_ida.so` (for IDA Pro) as well
 as `binexport12_binaryninja.so` (for Binary Ninja).
-
 
 ### macOS
 
 #### Prerequisites
 
-The preferred build environment is macOS 13 "Ventura" using Xcode
-15.1. Using macOS 12 "Monterey" should also work.
+The preferred build environment is macOS 26 "Tahoe" using Xcode. Older versions
+should also work.
 
 After installing the Developer Tools, make sure to install the command-line
 tools as well:
@@ -338,7 +336,7 @@ Download the latest stable version of CMake from the official site and mount its
 disk image:
 
 ```bash
-curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-Darwin-x86_64.dmg \
+curl -fsSL https://github.com/Kitware/CMake/releases/download/v4.4.0/cmake-4.4.0-macos-universal.dmg \
     -o $HOME/Downloads/cmake-osx.dmg
 hdiutil attach $HOME/Downloads/cmake-osx.dmg
 ```
@@ -347,28 +345,16 @@ At this point you will need to review and accept CMake's license agreement. Now
 install CMake:
 
 ```bash
-sudo cp -Rf /Volumes/cmake-3.25.1-Darwin-x86_64/CMake.app /Applications/
-hdiutil detach /Volumes/cmake-3.25.1-Darwin-x86_64
+sudo cp -Rf /Volumes/cmake-4.4.0-Darwin-x86_64/CMake.app /Applications/
+hdiutil detach /Volumes/cmake-4.4.0-Darwin-x86_64
 sudo /Applications/CMake.app/Contents/bin/cmake-gui --install
 ```
 
 The last command makes CMake available in the system path.
 
-#### IDA SDK
-
-Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA Pro 8.2:
-
-```bash
-unzip PATH/TO/idasdk_pro82.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk_pro82/* third_party/idasdk
-rmdir third_party/idasdk/idasdk_pro82
-```
-
 #### Build BinExport
 
-With all prerequisites in place, configure and build BinExport and run
-its tests:
+Configure and build BinExport and run its tests:
 
 ```bash
 mkdir -p build_mac && cd build_mac
@@ -376,8 +362,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     "-DCMAKE_INSTALL_PREFIX=${PWD}" \
     -DBINEXPORT_ENABLE_IDAPRO=ON \
-    "-DIdaSdk_ROOT_DIR=${PWD}/../third_party/idasdk" \
-    -DBINEXPORT_ENABLE_BINARYNINJA=ON \
+    -DBINEXPORT_ENABLE_BINARYNINJA=ON
 cmake --build . --config Release -- "-j$(sysctl -n hw.logicalcpu)"
 ctest --build-config Release --output-on-failure
 cmake --install . --config Release --strip
@@ -391,10 +376,8 @@ disable the Binary Ninja build, set `-DBINEXPORT_ENABLE_BINARYNINJA=OFF`.
 
 This will download and build Abseil, GoogleTest, Protocol Buffers and the
 Binary Ninja API. If all went well, the `build_mac/binexport-prefix`
-directory should contain two the files `binexport12_ida.dylib` and
-`binexport12_ida64.dylib` (for use with `ida` and `ida64`, respectively) as well
+directory should contain the file `binexport12_ida.dylib` (for IDA Pro) as well
 as `binexport12_binaryninja.dylib` (for Binary Ninja).
-
 
 ### Windows
 
@@ -404,7 +387,7 @@ Studio 2022 compiler and the [Windows SDK for Windows
 
 #### CMake
 
-Download and install the latest stable CMake (3.25.1 at the time of writing)
+Download and install the latest stable CMake (4.4.0 at the time of writing)
 from its [download page](https://cmake.org/download/). Make sure to select
 "Add CMake to the system PATH for all users".
 
@@ -412,10 +395,14 @@ from its [download page](https://cmake.org/download/). Make sure to select
 
 Download and install Git from its [download
 page](https://git-scm.com/download/win). Make sure to select the following
-options: * The installation directory should be left at the default
-`%ProgramFiles%\Git\bin\git.exe` * "Use Git from the Windows Command Prompt" -
-have the setup utility add Git to your system path. * "Use Windows' default
-console window" - to be able to use Git from the regular command prompt.
+options:
+
+*   The installation directory should be left at the default
+    `%ProgramFiles%\Git\bin\git.exe`
+*   "Use Git from the Windows Command Prompt" - have the setup utility add Git
+    to your system path.
+*   "Use Windows' default console window" - to be able to use Git from the
+    regular command prompt.
 
 #### Prepare
 
@@ -427,20 +414,9 @@ git clone https://github.com/google/binexport.git
 cd binexport
 ```
 
-#### IDA SDK
-
-Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA Pro 8.2, assuming that Git was installed into the default directory
-first:
-
-```bat
-"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk_pro82.zip -d third_party
-rename third_party\idasdk_pro82 idasdk
-```
-
 #### Build BinExport
 
-With all prerequisites in place, configure and build BinExport:
+Configure and build BinExport:
 
 ```bat
 if not exist build_msvc mkdir build_msvc
@@ -450,7 +426,6 @@ cmake .. ^
     -DCMAKE_BUILD_TYPE=Release ^
     "-DCMAKE_INSTALL_PREFIX=%cd%" ^
     -DBINEXPORT_ENABLE_IDAPRO=ON ^
-    -DIdaSdk_ROOT_DIR=%cd%\..\third_party\idasdk ^
     -DBINEXPORT_ENABLE_BINARYNINJA=ON
 cmake --build . --config Release -- /m /clp:NoSummary;ForceNoAlign /v:minimal
 ctest --build-config Release --output-on-failure
@@ -465,6 +440,5 @@ disable the Binary Ninja build, set `-DBINEXPORT_ENABLE_BINARYNINJA=OFF`.
 
 This will download and build Abseil, GoogleTest, Protocol Buffers and the
 Binary Ninja API. If all went well, the `build_msvc/binexport-prefix`
-directory should contain two the files `binexport12_ida.dll` and
-`binexport12_ida64.dll` (for use with `ida.exe` and `ida64.exe`, respectively) as well
+directory should contain the file `binexport12_ida.dll` (for IDA Pro) as well
 as `binexport12_binaryninja.dll` (for Binary Ninja).

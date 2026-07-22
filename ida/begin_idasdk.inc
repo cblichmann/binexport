@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@
 
 // Include standard headers that are implicitly assumed to be included
 // transitively by pro.h.
-#include <cstdint>
-#include <type_traits>
+#include <cstdint>      // IWYU pragma: keep
+#include <type_traits>  // IWYU pragma: keep
 
 // Now include the problematic header, end_idasdk.inc will clean up again.
 #include <pro.h>

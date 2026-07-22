@@ -1,4 +1,4 @@
-# Copyright 2011-2024 Google LLC
+# Copyright 2011-2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ endif()
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/23d40c5dbdef4ffb8d53860ff9e6d81c57476eab.zip  # 2025-06-17
-  URL_HASH SHA256=9eec3d540a7acb537ad91e48cb98bf25f29486becb1872e4301f4e3da3cd6c19
+  URL https://github.com/abseil/abseil-cpp/archive/ce1a8f1ec1793e5cb9d7fffa281efdfea5dd8035.zip  # 2026-07-20
+  URL_HASH SHA256=e49f19e4fd48322ff1ae52a869bd3224624929a3f6bf9bd1c2bfaa2d29a99fae
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -70,8 +70,8 @@ binexport_check_target(absl::core_headers)
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
-  URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v31.0.tar.gz # 2025-05-14
-  URL_HASH SHA256=2b695cb1eaef8e173f884235ee6d55f57186e95d89ebb31361ee55cb5fd1b996
+  URL https://github.com/protocolbuffers/protobuf/releases/download/v35.1/protobuf-35.1.tar.gz  # 2026-07-11
+  URL_HASH SHA256=f0b6838e7522a8da96126d487068c959bc624926368f3024ac8fd03abd0a1ac4
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -149,7 +149,7 @@ find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)
   if(BINEXPORT_IDASDK_OSS)
     if(BINEXPORT_IDASDK_GIT_TAG STREQUAL "")
-      set(_binexport_idasdk_git_tag "v9.2")
+      set(_binexport_idasdk_git_tag "v9.4.0-release")
     else()
       set(_binexport_idasdk_git_tag "${BINEXPORT_IDASDK_GIT_TAG}")
     endif()
@@ -159,7 +159,7 @@ if(BINEXPORT_ENABLE_IDAPRO)
       GIT_TAG        ${_binexport_idasdk_git_tag}
     )
     FetchContent_MakeAvailable(idasdk)
-    set(IdaSdk_ROOT_DIR "${idasdk_SOURCE_DIR}/src" CACHE INTERNAL "")
+    include(${idasdk_SOURCE_DIR}/src/cmake/idasdk_init.cmake)
   endif()
-  find_package(IdaSdk REQUIRED)
+  find_package(idasdk REQUIRED)
 endif()
